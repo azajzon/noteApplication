@@ -23,8 +23,9 @@ function Login({ onLoginSuccess }) {
       };
 
       const response = await axios.post('http://localhost:3001/api/users/login', userCredentials);
-      console.log(response.data);
-      onLoginSuccess();
+
+      console.log(response.data.user);
+      onLoginSuccess(response.data.user);
       // You should handle the login logic here,
       // like storing the JWT token sent from the server after successful authentication
     } catch (error) {
