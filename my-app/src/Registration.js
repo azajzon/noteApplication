@@ -9,12 +9,22 @@ function Register() {
     password: '',
   });
 
+  const [error, setError] = useState('');
+
   const { name, username, password } = formData;
 
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const onSubmit = async e => {
     e.preventDefault();
+    if ((username.length < 3 || password.length < 3)) {
+      setError('Username and password cannot be empty');
+      return;
+    }
+    if (username > 20 || password > 20) {
+      setError('Username and password cannot be greater than 20 characters');
+      return;
+    }
 
     try {
       const newUser = {

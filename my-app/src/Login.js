@@ -8,13 +8,29 @@ function Login({ onLoginSuccess }) {
     password: '',
   });
 
+  const [error, setError] = useState('');
+
 
   const { username, password } = formData;
 
-  const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const onChange = e =>  {
+    //  SANITIZATION
+    const sanitizedValue = e.target.value.replace(/[^a-zA-Z0-9@._-]/g, '');
+    setFormData({ ...formData, [e.target.name]: sanitizedValue });
+  }
 
   const onSubmit = async e => {
+    
     e.preventDefault();
+    if ((username.length < 3 || password.length < 3)) {
+      setError('Username and password cannot be empty');
+      return;
+    }
+    if (username.length > 20 || password.length > 20) {
+      setError('Username and password cannot be greater than 20 characters');
+      return;
+    }
+    
 
     try {
       const userCredentials = {

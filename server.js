@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = require('./models/user');
 const Note = require('./models/note'); 
 
+const Joi = require('joi'); // Joi is a powerful schema description language and data validator for JS
 
 const cors = require('cors');
 
@@ -20,6 +21,100 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .catch(err => console.error(err));
 
 const PORT = process.env.PORT || 3001;
+
+const noteSchemaJoi = Joi.object({
+    title: Joi.string().min(1).max(30).required(),
+    content: Joi.string().min(1).required(),
+    username: Joi.string().min(1).max(30).required(), // Adjust according to your username validation rules
+    category: Joi.string().min(1).max(30)
+  });
+
+
+app.post('/api/register', async (req, res) => {
+    try {
+        const { name, username, password } = req.body;
+
+        // Basic input validation
+        if (!username || !name || !password) {
+            return res.status(400).json();
+        }
+
+        let user = await User.findOne({ username });
+        if (user) {
+            return res.status(400).json();
+        }
+
+        // Hash password before saving
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user = new User({
+            name,
+            username,
+            password: hashedPassword, // Store the hashed password
+        });
+
+        await user.save();
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        let user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).json({ message: 'User does not exist' });
+        }
+
+        // Compare provided password with hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Exclude the password in the response
+        const userData = {
+            _id: user._id,
+            username: user.username,
+            name: user.name,
+        };
+
+        res.json({ user: userData, message: 'User logged in successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/note', async (req, res) => {
+    try {
+        // Validate request body against the Joi schema
+        const { value, error } = noteSchemaJoi.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: `Validation error: ${error.details.map(x => x.message).join(', ')}` });
+        }
+
+        const { title, content, username, category } = value;
+    
+        const newNote = new Note({
+          title,
+          content,
+          username,
+          category
+        });
+    
+        await newNote.save();
+        res.status(201).json(newNote);
+    } catch (error) {
+        console.error('Failed to save note:', error);
+        res.status(500).json({ message: 'Failed to save note.' });
+    }
+});
 
 
 app.post('/api/users/register', async (req, res) => {
@@ -60,7 +155,7 @@ app.post('/api/users/login', async (req, res) => {
             return res.status(400).json({ message: 'User does not exist' });
         }
 
-        if (password !== user.password) { // Again, consider using a secure method for password comparison
+        if (password !== user.password) { 
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
@@ -123,7 +218,7 @@ app.post('/api/notes', async (req, res) => {
   });
 
 
-  app.put('/api/notes/:noteId', async (req, res) => {
+  app.put('/api/edit/:noteId', async (req, res) => {
     try {
         const { noteId } = req.params;
         const { title, content, category } = req.body;

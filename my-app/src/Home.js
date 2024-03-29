@@ -94,7 +94,7 @@ function Home() {
 
             if (isEditing) {
                 // Update existing note
-                response = await axios.put(`http://localhost:3001/api/notes/${currentNote.noteId}`, noteData);
+                response = await axios.put(`http://localhost:3001/api/edit/${currentNote.noteId}`, noteData);
             } else {
                 // Create new note
                 response = await axios.post('http://localhost:3001/api/notes', noteData);
