@@ -16,7 +16,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // Include any other fields you want for your users
 });
 
 // Create a model from the schema

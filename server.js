@@ -25,8 +25,12 @@ const PORT = process.env.PORT || 3001;
 const noteSchemaJoi = Joi.object({
     title: Joi.string().min(1).max(30).required(),
     content: Joi.string().min(1).required(),
-    username: Joi.string().min(1).max(30).required(), // Adjust according to your username validation rules
-    category: Joi.string().min(1).max(30)
+    username: Joi.string().min(1).max(30).required(),
+  });
+
+  const userSchemaJoi = Joi.object({
+    username: Joi.string().min(1).max(30).required(),
+    password: Joi.string().min(1).required(),
   });
 
 
@@ -39,6 +43,7 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json();
         }
 
+
         let user = await User.findOne({ username });
         if (user) {
             return res.status(400).json();
@@ -48,10 +53,15 @@ app.post('/api/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        const { error } = userSchemaJoi.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: `Validation error: ${error.details.map(x => x.message).join(', ')}` });
+        }
+
         user = new User({
             name,
             username,
-            password: hashedPassword, // Store the hashed password
+            password: hashedPassword, 
         });
 
         await user.save();
@@ -104,8 +114,7 @@ app.post('/api/note', async (req, res) => {
         const newNote = new Note({
           title,
           content,
-          username,
-          category
+          username
         });
     
         await newNote.save();
@@ -117,96 +126,23 @@ app.post('/api/note', async (req, res) => {
 });
 
 
-app.post('/api/users/register', async (req, res) => {
-    
-    try {
-        // Destructure the fields from req.body
-        const { name, username, password } = req.body;
 
-        // Check if the user already exists
-        let user = await User.findOne({ username });
-        if (user) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
 
-        // Create a new user
-        user = new User({
-            name,
-            username,
-            password // this will be hashed before saving due to the schema's 'pre save' hook
-        });
-
-        // Save the user
-        await user.save();
-
-        res.status(201).json({ message: 'User registered successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.post('/api/users/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-
-        let user = await User.findOne({ username });
-        if (!user) {
-            return res.status(400).json({ message: 'User does not exist' });
-        }
-
-        if (password !== user.password) { 
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
-
-        // Manually construct user data to exclude the password
-        const userData = {
-            _id: user._id,
-            username: user.username,
-            name: user.name,
-        };
-
-        res.json({ user: userData, message: 'User logged in successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.post('/api/notes', async (req, res) => {
-    try {
-        const { title, content, username, category } = req.body;
-    
-        const newNote = new Note({
-          title,
-          content,
-          username,
-          category
-        });
-    
-        await newNote.save();
-        res.status(201).json(newNote);
-      } catch (error) {
-        console.error('Failed to save note:', error);
-        res.status(500).json({ message: 'Failed to save note.' });
-      }
-  });
 
   app.get('/api/filter', async (req, res) => {
     try {
-         console.log("hello");
          const { title, category, length } = req.query;
         
-         // Construct the query object based on provided parameters
+         
          let query = {};
          if (title) {
-             query.title = { $regex: title, $options: 'i' }; // Case-insensitive search
+             query.title = { $regex: title, $options: 'i' }; 
          }
          if (category) {
             query.category = category;
         }
         if (length) {
-            query.content = { $regex: `.{${length},}` }; // Match content with at least 'length' characters
+            query.content = { $regex: `.{${length},}` }; 
         }
 
         const notes = await Note.find(query);
@@ -247,6 +183,8 @@ app.post('/api/notes', async (req, res) => {
       res.status(500).json({ message: 'Failed to retrieve notes.' });
     }
   });
+
+  
 
 
 

@@ -12,6 +12,7 @@ const noteSchema = new mongoose.Schema({
     type: String,
     required: true,
     ref: 'User', // Assuming the username is unique and can be used to link to the User model
+    index: true
   },
   title: {
     type: String,

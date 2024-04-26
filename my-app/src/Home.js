@@ -24,7 +24,7 @@ function Home() {
         if (user?.username) {
             try {
                 const response = await axios.get(`http://localhost:3001/api/notes/${user.username}`);
-                setNotes(response.data); // Assuming the response data is an array of notes
+                setNotes(response.data); 
             } catch (error) {
                 console.error('Failed to fetch notes:', error);
             }
